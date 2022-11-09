@@ -1,11 +1,13 @@
-var scoreboardDirectory;
-var teamsDirectory;
+let scoreboardDirectory;
+let teamsDirectory;
+let problemsDirectory;
 
 function AddTitleAndHeader(){
     const queryString = window.location.pathname;
     const arrayOfString = queryString.split("/");
     scoreboardDirectory = arrayOfString[0] + "/" + arrayOfString[1] + "/" + arrayOfString[2] + "/" + arrayOfString[3] + "/" + arrayOfString[4] + "/scoreboard.json";
     teamsDirectory = arrayOfString[0] +  "/" + arrayOfString[1] +   "/" + arrayOfString[2] +  "/" + arrayOfString[3] + "/teams.json";
+    problemsDirectory = arrayOfString[0] +  "/" + arrayOfString[1] +   "/" + arrayOfString[2] +  "/" + arrayOfString[3] + "/problems.json";
     const pageTitle =   arrayOfString[4][0].toUpperCase() + 
                         arrayOfString[4].substring(1) + 
                         " Modul " + 
@@ -21,24 +23,43 @@ function AddTitleAndHeader(){
     document.getElementById("header").appendChild(headerText);
 }
 
-async function TableLoaderAndLegendCreator(){
+async function TableLoader(){
     const response1 = await fetch(scoreboardDirectory);
     const scoreboardData = await response1.json();
     const response2 = await fetch(teamsDirectory);
     const teamsData = await response2.json();
+    const response3 = await fetch(problemsDirectory);
+    const problemsData = await response3.json();
     const table = document.createElement("table");
     const header = ["Rank", "Team", "Score", "A", "B", "C", "D"];
 
-    const tr = document.createElement("tr"); 
+    const thead = document.createElement("thead");
+    const tr = document.createElement("tr");
+    let count = 0;
 
     header.forEach(element => { // table header
         const th = document.createElement("th");
         const text = document.createTextNode(element);
         th.appendChild(text);
+        if(element.length === 1){
+            th.classList.add("ToolTip");
+            th.classList.add("TextCenter");
+            const problemName = document.createElement("span");
+            problemName.classList.add("ToolTipText");
+            const problemNameText = problemsData.find(index => 
+                index.id === scoreboardData.rows[0].problems[count].problem_id
+            );
+            problemName.appendChild(document.createTextNode(problemNameText.name));
+            th.appendChild(problemName);
+            count++;
+        }
         tr.appendChild(th);
     });
 
-    table.appendChild(tr);    
+    thead.appendChild(tr);
+    table.appendChild(thead);
+    
+    const tbody = document.createElement("tbody");
 
     scoreboardData.rows.forEach(element => {
         const tr = document.createElement("tr");
@@ -102,41 +123,14 @@ async function TableLoaderAndLegendCreator(){
             tr.appendChild(verdict);
         });
 
-        table.appendChild(tr);
+        tbody.appendChild(tr);
 
     });
+    table.appendChild(tbody);
     document.getElementById("tableContainer").appendChild(table);
-
-    const legendContainer = document.createElement("div");
-    legendContainer.classList.add("Center");
-    legendContainer.setAttribute("id", "legendContainer");
-
-    const legend = document.createElement("table");
-    var letter = 'A';
-    scoreboardData.rows[0].problems.forEach(element => { // problem tag
-        const tr = document.createElement("tr");
-        tr.classList.add("LegendText");
-        const problemLetterCells = document.createElement("td");
-        const problemLetter = document.createElement("p");
-        problemLetter.appendChild(document.createTextNode(letter));
-        problemLetterCells.appendChild(problemLetter);
-        tr.appendChild(problemLetterCells);
-
-        const problemTagCells = document.createElement("td");
-        const problemTag = document.createElement("p");
-        problemTag.appendChild(document.createTextNode(element.label));
-        problemTagCells.appendChild(problemTag);
-        tr.appendChild(problemTagCells);
-
-        legend.appendChild(tr);
-        letter = String.fromCharCode(letter.charCodeAt(0) + 1);;
-    });
-    legendContainer.appendChild(legend);
-
-    document.getElementById("tableContainer").insertAdjacentElement("afterend", legendContainer);
 }
 
 function Init(){
     AddTitleAndHeader();
-    TableLoaderAndLegendCreator();
+    TableLoader();
 }
